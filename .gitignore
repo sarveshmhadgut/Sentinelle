@@ -4,6 +4,7 @@ data
 experiments
 models
 reports
+projectflow.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
