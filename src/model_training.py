@@ -135,7 +135,7 @@ def train_model(
         raise
 
 
-def save_model(model: object, file_path: str = "models/model.pkl") -> None:
+def save_model(model: object, file_path: str) -> None:
     """
     Save a trained machine learning model to disk as a pickle file.
 
@@ -187,7 +187,7 @@ def main() -> None:
         y_train = train_data.iloc[:, -1].values
 
         classifier = train_model(X_train=X_train, y_train=y_train, params=params)
-        save_model(classifier)
+        save_model(classifier, "./models/model.pkl")
 
         logger.info("Model training pipeline completed successfully")
 

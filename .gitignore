@@ -1,7 +1,6 @@
 .DS_Store
 
 data
-experiments
 models
 reports
 projectflow.txt

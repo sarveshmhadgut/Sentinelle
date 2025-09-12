@@ -166,16 +166,13 @@ def main() -> None:
     try:
         logger.info("Data ingestion pipeline started")
 
-        data_url: str = (
-            "https://raw.githubusercontent.com/sarveshmhadgut/DSBDAL-Coursework/"
-            "refs/heads/main/datasets/spam.csv"
-        )
+        data_url = "https://raw.githubusercontent.com/sarveshmhadgut/DSBDAL-Coursework/main/datasets/spam.csv"
 
-        df: pd.DataFrame = load_data(data_url=data_url)
-        processed_df: pd.DataFrame = preprocess(df)
+        df = load_data(data_url=data_url)
+        processed_df = preprocess(df)
 
-        test_size: float = 0.2
-        random_state: int = 42
+        test_size = 0.2
+        random_state = 42
 
         train_data, test_data = train_test_split(
             processed_df, test_size=test_size, random_state=random_state
