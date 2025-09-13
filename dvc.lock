@@ -61,14 +61,14 @@ stages:
       size: 7049
     params:
       params.yaml:
-        feature_engineering.max_features: 100
+        feature_engineering.max_features: 150
         feature_engineering.preprocessed_data_dirpath: ./data/preprocessed/
         feature_engineering.tfidf_data_dirpath: ./data/tfidf/
     outs:
     - path: data/tfidf
       hash: md5
-      md5: 6639299090a8babce8ccd377b811e223.dir
-      size: 2309932
+      md5: 3395a635e7cea29e4ccf14c44da2c952.dir
+      size: 3416396
       nfiles: 2
   model_training:
     cmd:
@@ -76,8 +76,8 @@ stages:
     deps:
     - path: data/tfidf
       hash: md5
-      md5: 6639299090a8babce8ccd377b811e223.dir
-      size: 2309932
+      md5: 3395a635e7cea29e4ccf14c44da2c952.dir
+      size: 3416396
       nfiles: 2
     - path: src/model_training.py
       hash: md5
@@ -86,22 +86,22 @@ stages:
     params:
       params.yaml:
         model_training.model_filepath: ./models/model.pkl
-        model_training.n_estimators: 100
+        model_training.n_estimators: 150
         model_training.random_state: 42
         model_training.train_data_filepath: ./data/tfidf/tfidf_train.csv
     outs:
     - path: models/model.pkl
       hash: md5
-      md5: 287dbaa0e3fdd4ff2db6316c0e356e80
-      size: 5362177
+      md5: 5eb3d4ec2aee0934e9795be938b97b54
+      size: 9216021
   model_evaluation:
     cmd:
     - python3 src/model_evaluation.py
     deps:
     - path: models/model.pkl
       hash: md5
-      md5: 287dbaa0e3fdd4ff2db6316c0e356e80
-      size: 5362177
+      md5: 5eb3d4ec2aee0934e9795be938b97b54
+      size: 9216021
     - path: src/model_evaluation.py
       hash: md5
       md5: d53fd12d9596bf0c935bc3613c0ee289
@@ -114,6 +114,6 @@ stages:
     outs:
     - path: reports/
       hash: md5
-      md5: d26653c4964aee92abe54852becfb7cf.dir
-      size: 324
+      md5: 4a54f8fe40354253a5493d0e90cb6202.dir
+      size: 325
       nfiles: 2

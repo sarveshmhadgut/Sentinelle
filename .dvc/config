@@ -1,0 +1,4 @@
+[core]
+    remote = s3ntinellestore
+['remote "s3ntinellestore"']
+    url = s3://s3ntinelle
