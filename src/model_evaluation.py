@@ -2,6 +2,7 @@ import os
 import json
 import yaml
 import pickle
+from dvclive import Live
 import numpy as np
 import pandas as pd
 from logger import Logger
@@ -229,12 +230,12 @@ def main() -> None:
     """
     try:
         logger.info("Model evaulation pipeline started")
-        params = load_params("params.yaml")["model_evaluation"]
+        params = load_params("params.yaml")
 
-        model_path = params["model_filepath"]
+        model_path = params["model_evaluation"]["model_filepath"]
         classifier = load_model(model_filepath=model_path)
 
-        test_data_path = params["test_data_path"]
+        test_data_path = params["model_evaluation"]["test_data_path"]
         test_data = load_data(data_filepath=test_data_path)
         logger.debug("Testing data loaded successfully")
 
@@ -245,7 +246,19 @@ def main() -> None:
             classifier=classifier, X_test=X_test, y_test=y_test
         )
 
-        metrics_dirpath = params["metrics_dirpath"]
+        with Live(save_dvc_exp=True) as live:
+            live.log_metric("test_size", params["data_ingestion"]["test_size"])
+            live.log_metric(
+                "max_features", params["feature_engineering"]["max_features"]
+            )
+            live.log_metric("n_estimators", params["model_training"]["n_estimators"])
+            live.log_metric("random_state", params["model_training"]["random_state"])
+            live.log_metric("accuracy", metrics["accuracy"])
+            live.log_metric("precision", metrics["precision"])
+            live.log_metric("recall", metrics["recall"])
+            live.log_metric("roc_auc", metrics["roc_auc"])
+
+        metrics_dirpath = params["model_evaluation"]["metrics_dirpath"]
         save_metrics(metrics=metrics, report=report, dirpath=metrics_dirpath)
 
         logger.debug("Model evaluation pipeline completed successfully")

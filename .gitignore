@@ -2,7 +2,6 @@
 
 data
 models
-reports
 projectflow.txt
 tempCodeRunnerFile.py
 # Byte-compiled / optimized / DLL files
@@ -212,3 +211,4 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+/reports

@@ -1,0 +1,10 @@
+{
+    "test_size": 0.2,
+    "max_features": 100,
+    "n_estimators": 100,
+    "random_state": 42,
+    "accuracy": 0.96242,
+    "precision": 0.92742,
+    "recall": 0.78231,
+    "roc_auc": 0.9598
+}

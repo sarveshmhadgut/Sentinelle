@@ -65,3 +65,8 @@ stages:
     - model_evaluation.metrics_dirpath
     outs:
     - reports/
+metrics:
+- dvclive/metrics.json
+plots:
+- dvclive/plots/metrics:
+    x: step
