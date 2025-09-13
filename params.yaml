@@ -1,0 +1,27 @@
+data_ingestion:
+  data_url: "https://raw.githubusercontent.com/sarveshmhadgut/DSBDAL-Coursework/main/datasets/spam.csv"
+  test_size: 0.2
+  random_state: 42
+  raw_data_dirpath: "./data/raw"
+
+data_preprocessing:
+  raw_data_dirpath: "./data/raw/"
+  text_col: "text"
+  target_col: "target"
+  preprocessed_data_dirpath: "./data/preprocessed/"
+
+feature_engineering:
+  preprocessed_data_dirpath: "./data/preprocessed/"
+  max_features: 100
+  tfidf_data_dirpath: "./data/tfidf/"
+
+model_training:
+  train_data_filepath: "./data/tfidf/tfidf_train.csv"
+  n_estimators: 100
+  random_state: 42
+  model_filepath: "./models/model.pkl"
+
+model_evaluation:
+  model_filepath: "./models/model.pkl"
+  test_data_path: "./data/tfidf/tfidf_test.csv"
+  metrics_dirpath: "./reports/"

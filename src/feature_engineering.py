@@ -1,92 +1,89 @@
 import os
 import yaml
 import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
 from logger import Logger
+from typing import Dict, Any
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 logger = Logger(name="feature_engineering", log_file="feature_engineering.log")
 
 
-def load_params(params_path: str) -> dict:
+def load_params(params_filepath: str) -> Dict[str, Any]:
     """
     Load parameters from a YAML file.
 
     Args:
-        params_path (str): The file path of the YAML configuration to load.
+        params_filepath (str): Path to the YAML parameter file.
 
     Returns:
-        dict: The loaded parameters as a dictionary.
+        Dict[str, Any]: Dictionary containing parameters.
 
     Raises:
-        FileNotFoundError: If the file is not found at the given path.
-        yaml.YAMLError: If the YAML file is malformed.
-        Exception: For any unexpected errors.
+        FileNotFoundError: If the file does not exist.
+        yaml.YAMLError: If YAML parsing fails.
+        Exception: For other errors.
     """
-    if not isinstance(params_path, str):
+    if not isinstance(params_filepath, str):
         raise TypeError("params_path must be a string")
 
     try:
-        logger.info(f"Loading params from: {params_path}")
-        with open(params_path, "r") as f:
+        logger.info(f"Loading params...")
+        with open(params_filepath, "r") as f:
             params = yaml.safe_load(f)
-
-        logger.debug(f"Parameters loaded successfully")
+        logger.debug(f"Params loaded successfully")
         return params
 
-    except FileNotFoundError as e:
-        logger.error(f"Parameter file not found: {params_path}")
-        raise e
+    except FileNotFoundError:
+        logger.error(f"Parameter file not found: {params_filepath}")
+        raise
 
     except yaml.YAMLError as e:
         logger.error(f"Error parsing YAML file: {e}")
-        raise e
+        raise
 
     except Exception as e:
         logger.error(f"Unexpected error loading parameters: {e}")
-        raise e
+        raise
 
 
-def load_data(file_path: str) -> pd.DataFrame:
+def load_data(data_filepath: str) -> pd.DataFrame:
     """
-    Load data from a CSV file into a pandas DataFrame and fill missing values.
+    Load data from a CSV URL or file path into a DataFrame.
 
     Args:
-        file_path (str): The file path of the CSV to load.
+        data_filepath (str): URL or local path of CSV file.
 
     Returns:
-        pd.DataFrame: The loaded DataFrame with missing values filled with empty strings.
+        pd.DataFrame: Loaded DataFrame.
 
     Raises:
-        pd.errors.ParserError: If there is an error parsing the CSV.
-        FileNotFoundError: If the CSV file does not exist.
-        Exception: For other unexpected errors.
+        pd.errors.ParserError: Parsing errors.
+        Exception: Other errors.
     """
-    if not isinstance(file_path, str):
-        raise TypeError("file_path must be a string")
+    if not isinstance(data_filepath, str):
+        raise TypeError("data_filepath must be a string")
 
     try:
-        logger.info(f"Loading params from: {file_path}")
+        logger.info(f"Loading data from: {data_filepath}")
+        df = pd.read_csv(data_filepath)
 
-        df = pd.read_csv(file_path)
-        df.fillna("", inplace=True)
-
-        logger.debug(f"Data loaded successfully")
+        logger.info(f"Data loaded successfully from {data_filepath}")
         return df
 
     except pd.errors.ParserError as e:
         logger.error(f"CSV parsing failed: {e}")
         raise
 
-    except FileNotFoundError as e:
-        logger.error(f"File not found: {e}")
-        raise
-
     except Exception as e:
-        logger.error(f"Unexpected error while loading data: {e}")
+        logger.error(f"Unexpected error loading data: {e}")
         raise
 
 
-def apply_tfidf(train_data: pd.DataFrame, test_data: pd.DataFrame, max_features: int):
+def apply_tfidf(
+    train_data: pd.DataFrame,
+    test_data: pd.DataFrame,
+    max_features: int,
+):
     """
     Apply TF-IDF vectorization on train and test text data and return DataFrames with features and labels.
 
@@ -113,7 +110,9 @@ def apply_tfidf(train_data: pd.DataFrame, test_data: pd.DataFrame, max_features:
         raise ValueError("max_features must be a positive integer")
 
     try:
-        logger.debug("Applying TF-IDF")
+        logger.debug("Applying TF-IDF...")
+        train_data.fillna("", inplace=True)
+        test_data.fillna("", inplace=True)
         vectorizer = TfidfVectorizer(max_features=max_features)
 
         X_train = train_data["text"].values
@@ -124,54 +123,59 @@ def apply_tfidf(train_data: pd.DataFrame, test_data: pd.DataFrame, max_features:
 
         X_train_tfidf = vectorizer.fit_transform(X_train)
         X_test_tfidf = vectorizer.transform(X_test)
-        logger.debug("a")
 
-        train_df = pd.DataFrame(X_train_tfidf.toarray())
-        train_df["label"] = y_train
+        train_tfidf_df = pd.DataFrame(X_train_tfidf.toarray())
+        train_tfidf_df["label"] = y_train
 
-        test_df = pd.DataFrame(X_test_tfidf.toarray())
-        test_df["label"] = y_test
+        test_tfidf_df = pd.DataFrame(X_test_tfidf.toarray())
+        test_tfidf_df["label"] = y_test
 
-        logger.debug(f"TF-IDF vectorization applied with max_features={max_features}")
+        logger.debug(f"TF-IDF vectorization successfully applied")
 
-        logger.debug(
-            f"Training data shape: {train_df.shape}, Testing data shape: {test_df.shape}"
-        )
-
-        return train_df, test_df
+        return train_tfidf_df, test_tfidf_df
 
     except Exception as e:
-        logger.error(f"While applying TF-IDF vectorization: {e}")
+        logger.error(f"Error while applying TF-IDF vectorization: {e}")
         raise
 
 
-def save_data(df: pd.DataFrame, filepath: str) -> None:
+def save_data(
+    train_data: pd.DataFrame, test_data: pd.DataFrame, data_dirpath: str
+) -> None:
     """
-    Save the given DataFrame to a CSV file at the specified filepath.
-    Creates directories if they do not exist.
+    Save train and test data to CSV files under specified path.
 
     Args:
-        df (pd.DataFrame): DataFrame to save.
-        filepath (str): Destination file path for the CSV.
+        train_data (pd.DataFrame): Training data.
+        test_data (pd.DataFrame): Testing data.
+        data_dirpath (str): Directory to save files.
 
     Raises:
-        TypeError: If input types are incorrect.
-        Exception: For unexpected errors during saving.
+        Exception: Saving errors.
     """
-    if not isinstance(df, pd.DataFrame):
-        raise TypeError("df must be a pandas DataFrame")
+    if not isinstance(train_data, pd.DataFrame):
+        raise TypeError("train_data must be a pandas DataFrame")
 
-    if not isinstance(filepath, str):
-        raise TypeError("filepath must be a string")
+    if not isinstance(test_data, pd.DataFrame):
+        raise TypeError("test_data must be a pandas DataFrame")
+
+    if not isinstance(data_dirpath, str):
+        raise TypeError("data_path must be a string")
 
     try:
-        logger.info(f"Saving data to {filepath}")
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        df.to_csv(filepath, index=False)
-        logger.debug(f"Data saved successfully to {filepath}")
+        os.makedirs(data_dirpath, exist_ok=True)
+        logger.info(f"Saving training and testing data to: {data_dirpath}")
+
+        train_data_filepath = os.path.join(data_dirpath, "tfidf_train.csv")
+        test_data_filepath = os.path.join(data_dirpath, "tfidf_test.csv")
+
+        train_data.to_csv(train_data_filepath, index=False)
+        test_data.to_csv(test_data_filepath, index=False)
+
+        logger.debug(f"Training and testing data saved successfully at {data_dirpath}")
 
     except Exception as e:
-        logger.error(f"Unexpected error while saving data to {filepath}: {e}")
+        logger.error(f"Unexpected error saving data: {e}")
         raise
 
 
@@ -185,29 +189,31 @@ def main() -> None:
     """
     try:
         logger.info("Feature engineering pipeline started")
+        params = load_params("params.yaml")["feature_engineering"]
 
-        max_features: int = 50
+        preprocessed_data_dirpath = params["preprocessed_data_dirpath"]
 
-        intrim_data_path: str = "./data/interim/"
-        train_intrim_data_path = os.path.join(intrim_data_path, "train_processed.csv")
-        test_intrim_data_path = os.path.join(intrim_data_path, "test_processed.csv")
-
-        train_data = load_data("./data/interim/train_processed.csv")
-        logger.debug(f"Read train interim data")
-
-        test_data = load_data("./data/interim/test_processed.csv")
-        logger.debug(f"Read test interim data")
-
-        train_df, test_df = apply_tfidf(
-            train_data=train_data, test_data=test_data, max_features=max_features
+        train_preprocessed_data_path = os.path.join(
+            preprocessed_data_dirpath, "preprocessed_train.csv"
+        )
+        test_preprocessed_data_path = os.path.join(
+            preprocessed_data_dirpath, "preprocessed_test.csv"
         )
 
-        processed_data_path: str = "./data/processed/"
-        train_processed_data_path = os.path.join(processed_data_path, "train_tfidf.csv")
-        test_processed_data_path = os.path.join(processed_data_path, "test_tfidf.csv")
+        train_preprocessed_data = load_data(data_filepath=train_preprocessed_data_path)
+        test_preprocessed_data = load_data(data_filepath=test_preprocessed_data_path)
 
-        save_data(df=train_df, filepath=train_processed_data_path)
-        save_data(df=test_df, filepath=test_processed_data_path)
+        train_tfidf_df, test_tfidf_df = apply_tfidf(
+            train_data=train_preprocessed_data,
+            test_data=test_preprocessed_data,
+            max_features=params["max_features"],
+        )
+
+        save_data(
+            train_data=train_tfidf_df,
+            test_data=test_tfidf_df,
+            data_dirpath=params["tfidf_data_dirpath"],
+        )
 
         logger.info("Feature engineering pipeline completed successfully")
 

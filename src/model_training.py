@@ -9,12 +9,12 @@ from logger import Logger
 logger = Logger(name="model_training", log_file="model_training.log")
 
 
-def load_params(params_path: str) -> dict:
+def load_params(params_filepath: str) -> dict:
     """
     Load parameters from a YAML file.
 
     Args:
-        params_path (str): The file path of the YAML configuration to load.
+        params_filepath (str): The file path of the YAML configuration to load.
 
     Returns:
         dict: The loaded parameters as a dictionary.
@@ -24,19 +24,20 @@ def load_params(params_path: str) -> dict:
         yaml.YAMLError: If the YAML file is malformed.
         Exception: For any unexpected errors.
     """
-    if not isinstance(params_path, str):
+    if not isinstance(params_filepath, str):
         raise TypeError("params_path must be a string")
 
     try:
         logger.info(f"Loading params...")
-        with open(params_path, "r") as f:
+
+        with open(params_filepath, "r") as f:
             params = yaml.safe_load(f)
 
-        logger.debug(f"Parameters loaded successfully")
+        logger.debug(f"Params loaded successfully")
         return params
 
     except FileNotFoundError as e:
-        logger.error(f"Parameter file not found: {params_path}")
+        logger.error(f"Parameter file not found: {params_filepath}")
         raise e
 
     except yaml.YAMLError as e:
@@ -48,37 +49,29 @@ def load_params(params_path: str) -> dict:
         raise e
 
 
-def load_data(filepath: str) -> pd.DataFrame:
+def load_data(data_filepath: str) -> pd.DataFrame:
     """
-    Load data from a CSV file into a pandas DataFrame, handling missing data
-    and optionally skipping bad lines with warnings.
+    Load data from a CSV URL or file path into a DataFrame.
 
     Args:
-        filepath (str): Path to the CSV file to load.
+        data_filepath (str): URL or local path of CSV file.
 
     Returns:
-        pd.DataFrame: Loaded DataFrame with missing values filled as empty strings.
+        pd.DataFrame: Loaded DataFrame.
 
     Raises:
-        FileNotFoundError: If the specified CSV file does not exist.
-        pd.errors.ParserError: If there is a parsing error reading the CSV.
-        Exception: For other unexpected errors.
+        pd.errors.ParserError: Parsing errors.
+        Exception: Other errors.
     """
-    if not isinstance(filepath, str):
-        raise TypeError("filepath must be a string")
+    if not isinstance(data_filepath, str):
+        raise TypeError("data_filepath must be a string")
 
     try:
-        logger.info(f"Loading data...")
+        logger.info(f"Loading data from: {data_filepath}")
+        df = pd.read_csv(data_filepath)
 
-        df = pd.read_csv(filepath, on_bad_lines="warn", engine="python")
-        df.fillna("", inplace=True)
-
-        logger.debug(f"Data loaded successfully with shape: {df.shape}")
+        logger.info(f"Data loaded successfully from {data_filepath}")
         return df
-
-    except FileNotFoundError as e:
-        logger.error(f"File not found: {e}")
-        raise
 
     except pd.errors.ParserError as e:
         logger.error(f"CSV parsing failed: {e}")
@@ -92,7 +85,8 @@ def load_data(filepath: str) -> pd.DataFrame:
 def train_model(
     X_train: np.ndarray,
     y_train: np.ndarray,
-    params: dict,
+    n_estimators: int = 25,
+    random_state: int = 42,
 ) -> RandomForestClassifier:
     """
     Train a RandomForestClassifier model with the provided training data and parameters.
@@ -100,7 +94,8 @@ def train_model(
     Args:
         X_train (np.ndarray): Feature matrix for training.
         y_train (np.ndarray): Target vector for training.
-        params (dict): Dictionary of hyperparameters including 'n_estimators' and 'random_state'.
+        n_estimators (int): The number of trees in the forest
+        random_state (int): Controls the randomness for reproducibility
 
     Returns:
         RandomForestClassifier: Trained Random Forest model instance.
@@ -115,15 +110,15 @@ def train_model(
         )
 
     try:
-        logger.info(f"Training classfier [X: {X_train.shape}, y: {y_train.shape}]...")
+        logger.info(f"Training Random Forest classfier...")
 
         classifier = RandomForestClassifier(
-            n_estimators=params.get("n_estimators", 25),
-            random_state=params.get("random_state", 42),
+            n_estimators=n_estimators,
+            random_state=random_state,
         )
         classifier.fit(X_train, y_train)
 
-        logger.debug("Classifier trained successfully")
+        logger.debug("Random Forest classifier trained successfully")
         return classifier
 
     except ValueError as e:
@@ -135,26 +130,26 @@ def train_model(
         raise
 
 
-def save_model(model: object, file_path: str) -> None:
+def save_model(model: object, model_filepath: str) -> None:
     """
     Save a trained machine learning model to disk as a pickle file.
 
     Args:
         model (object): Trained ML model object to save.
-        file_path (str): Destination file path for the saved model. Defaults to 'models/model.pkl'.
+        model_filepath (str): Destination file path for the saved model.
 
     Raises:
         FileNotFoundError: If the directory path does not exist and cannot be created.
         Exception: For any other errors during saving.
     """
-    if not isinstance(file_path, str):
+    if not isinstance(model_filepath, str):
         raise TypeError("file_path must be a string")
 
     try:
         logger.info(f"Saving model...")
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        os.makedirs(os.path.dirname(model_filepath), exist_ok=True)
 
-        with open(file_path, "wb") as f:
+        with open(model_filepath, "wb") as f:
             pickle.dump(model, f)
 
         logger.debug(f"Model saved successfully")
@@ -178,17 +173,24 @@ def main() -> None:
     """
     try:
         logger.debug("Starting model training pipeline")
-        params = {"n_estimators": 25, "random_state": 42}
 
-        train_tfidf_data_path = "./data/processed/train_tfidf.csv"
-        train_data = load_data(filepath=train_tfidf_data_path)
+        params = load_params("params.yaml")["model_training"]
 
-        X_train = train_data.iloc[:, :-1].values
-        y_train = train_data.iloc[:, -1].values
+        train_data_filepath = params["train_data_filepath"]
+        train_tfidf_data = load_data(data_filepath=train_data_filepath)
+        logger.debug("Training data loaded successfully")
 
-        classifier = train_model(X_train=X_train, y_train=y_train, params=params)
-        save_model(classifier, "./models/model.pkl")
+        X_train = train_tfidf_data.iloc[:, :-1].values
+        y_train = train_tfidf_data.iloc[:, -1].values
 
+        model = train_model(
+            X_train=X_train,
+            y_train=y_train,
+            n_estimators=params["n_estimators"],
+            random_state=params["random_state"],
+        )
+
+        save_model(model=model, model_filepath=params["model_filepath"])
         logger.info("Model training pipeline completed successfully")
 
     except Exception as e:

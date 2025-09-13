@@ -6,12 +6,19 @@ stages:
     deps:
     - path: src/data_ingestion.py
       hash: md5
-      md5: c65a0c97e5b4133df8b3f748a83a377a
-      size: 5215
+      md5: 8bf5b7b8852690f831e9ffbb0c53bef2
+      size: 5512
+    params:
+      params.yaml:
+        data_ingestion.data_url: 
+          https://raw.githubusercontent.com/sarveshmhadgut/DSBDAL-Coursework/main/datasets/spam.csv
+        data_ingestion.random_state: 42
+        data_ingestion.raw_data_dirpath: ./data/raw
+        data_ingestion.test_size: 0.2
     outs:
     - path: data/raw
       hash: md5
-      md5: f76e51cb14ebbdaebb8af05eabd0327f.dir
+      md5: 38512cbc18c77ebfdc493e1c44be218b.dir
       size: 479272
       nfiles: 2
   data_preprocessing:
@@ -20,70 +27,93 @@ stages:
     deps:
     - path: data/raw
       hash: md5
-      md5: f76e51cb14ebbdaebb8af05eabd0327f.dir
+      md5: 38512cbc18c77ebfdc493e1c44be218b.dir
       size: 479272
       nfiles: 2
     - path: src/data_preprocessing.py
       hash: md5
-      md5: ed5052ed10a3724f8863704f6eea3d82
-      size: 5560
+      md5: 0c204aa26bce8b4614a58ec5e65f9f56
+      size: 8242
+    params:
+      params.yaml:
+        data_preprocessing.preprocessed_data_dirpath: ./data/preprocessed/
+        data_preprocessing.raw_data_dirpath: ./data/raw/
+        data_preprocessing.target_col: target
+        data_preprocessing.text_col: text
     outs:
-    - path: data/interim
+    - path: data/preprocessed
       hash: md5
-      md5: 771ab0089ff031029a0f9dc08965ae3b.dir
+      md5: 5b79c08d37330d3cee0b0ff1c132055d.dir
       size: 256622
       nfiles: 2
   feature_engineering:
     cmd:
     - python3 src/feature_engineering.py
     deps:
-    - path: data/interim
+    - path: data/preprocessed
       hash: md5
-      md5: 771ab0089ff031029a0f9dc08965ae3b.dir
+      md5: 5b79c08d37330d3cee0b0ff1c132055d.dir
       size: 256622
       nfiles: 2
     - path: src/feature_engineering.py
       hash: md5
-      md5: b1ff709fb49a74de1091d2e4e2ed3a3e
-      size: 7058
+      md5: 65561dabe1a2511700043fbb5bdc13e4
+      size: 7049
+    params:
+      params.yaml:
+        feature_engineering.max_features: 100
+        feature_engineering.preprocessed_data_dirpath: ./data/preprocessed/
+        feature_engineering.tfidf_data_dirpath: ./data/tfidf/
     outs:
-    - path: data/processed
+    - path: data/tfidf
       hash: md5
-      md5: 313b4a44065b131c70fcbe1ac7e14d53.dir
-      size: 1181091
+      md5: 6639299090a8babce8ccd377b811e223.dir
+      size: 2309932
       nfiles: 2
   model_training:
     cmd:
     - python3 src/model_training.py
     deps:
-    - path: data/processed
+    - path: data/tfidf
       hash: md5
-      md5: 313b4a44065b131c70fcbe1ac7e14d53.dir
-      size: 1181091
+      md5: 6639299090a8babce8ccd377b811e223.dir
+      size: 2309932
       nfiles: 2
     - path: src/model_training.py
       hash: md5
-      md5: fd54d80cdfca1093f197bce232b18d6f
-      size: 5957
+      md5: bf073b3be27632eb4627845158a997b7
+      size: 5847
+    params:
+      params.yaml:
+        model_training.model_filepath: ./models/model.pkl
+        model_training.n_estimators: 100
+        model_training.random_state: 42
+        model_training.train_data_filepath: ./data/tfidf/tfidf_train.csv
     outs:
     - path: models/model.pkl
       hash: md5
-      md5: a8fe25d894655a03c53683930faea7e7
-      size: 1060249
+      md5: 287dbaa0e3fdd4ff2db6316c0e356e80
+      size: 5362177
   model_evaluation:
     cmd:
     - python3 src/model_evaluation.py
     deps:
     - path: models/model.pkl
       hash: md5
-      md5: a8fe25d894655a03c53683930faea7e7
-      size: 1060249
+      md5: 287dbaa0e3fdd4ff2db6316c0e356e80
+      size: 5362177
     - path: src/model_evaluation.py
       hash: md5
-      md5: a97aa2906cf1da3245e389ebd081d485
-      size: 7090
+      md5: abd24c2975dd94774d72520fe6aad5a3
+      size: 7667
+    params:
+      params.yaml:
+        model_evaluation.metrics_dirpath: ./reports/
+        model_evaluation.model_filepath: ./models/model.pkl
+        model_evaluation.test_data_path: ./data/tfidf/tfidf_test.csv
     outs:
-    - path: reports/metrics.json
+    - path: reports/
       hash: md5
-      md5: 4b78e95caab0529b1b91119bea794c48
-      size: 144
+      md5: d26653c4964aee92abe54852becfb7cf.dir
+      size: 324
+      nfiles: 2
